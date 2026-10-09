@@ -54,12 +54,31 @@ export const KnowledgeHubView: React.FC = () => {
 
   const officialLinks = [
     {
-      title: 'Digital Personal Data Protection Act, 2023 (Official India Code)',
-      url: 'https://www.indiacode.nic.in/handle/123456789/22037',
+      title: 'Digital Personal Data Protection Act, 2023 (MeitY Official Portal)',
+      url: 'https://www.meity.gov.in/content/digital-personal-data-protection-act-2023-dpdp-act',
+      docType: 'Official Portal',
     },
     {
-      title: 'Ministry of Electronics and Information Technology (MeitY)',
-      url: 'https://www.meity.gov.in/content/guidelines-india-digital-personal-data-protection-act-2023',
+      title: 'Digital Personal Data Protection Act, 2023 (Official PDF Enactment)',
+      url: 'https://www.meity.gov.in/static/uploads/2024/02/Digital-Personal-Data-Protection-Act-2023-1.pdf',
+      docType: 'Statute PDF',
+    },
+    {
+      title: 'DPDP Commencement Notification (Gazette G.S.R. 843(E), 13 Nov 2025)',
+      url: 'https://egazette.gov.in/WriteReadData/2025/267647.pdf',
+      fallbackUrl: 'https://www.meity.gov.in/static/uploads/2025/11/c56ceae6c383460ca69577428d36828b.pdf',
+      fallbackLabel: 'MeitY Official Mirror PDF',
+      docType: 'Gazette Notification',
+    },
+    {
+      title: 'DPDP Rules, 2025 Framework Collection (MeitY)',
+      url: 'https://www.meity.gov.in/documents/act-and-policies/digital-personal-data-protection-rules-2025-gDOxUjMtQWa?pageTitle=Digital-Personal-Data-Protection-Rules-2025',
+      docType: 'Subordinate Rules',
+    },
+    {
+      title: 'MeitY Data Protection & Explanatory Framework Hub',
+      url: 'https://www.meity.gov.in/data-protection-framework',
+      docType: 'Explanatory Material',
     },
   ];
 
@@ -81,23 +100,52 @@ export const KnowledgeHubView: React.FC = () => {
       {/* Official Portals Strip */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {officialLinks.map((link, idx) => (
-          <a
+          <div
             key={idx}
-            href={link.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group bg-white p-4 rounded-2xl border border-slate-200/90 hover:border-sky-300 hover:bg-sky-50/40 transition-all flex items-center justify-between shadow-2xs"
+            className="group bg-white p-4 rounded-2xl border border-slate-200/90 hover:border-sky-300 transition-all flex flex-col justify-between shadow-2xs"
           >
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
-                <Scale className="w-4 h-4" />
-              </div>
-              <div className="text-xs font-bold text-slate-800 group-hover:text-sky-700 transition-colors">
-                {link.title}
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
+                  <Scale className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
+                    {link.docType}
+                  </span>
+                  <div className="text-xs font-bold text-slate-900 mt-1">
+                    {link.title}
+                  </div>
+                </div>
               </div>
             </div>
-            <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-sky-600 transition-colors shrink-0" />
-          </a>
+
+            <div className="flex items-center gap-2 pt-2 border-t border-slate-100 flex-wrap">
+              <a
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 text-xs font-semibold border border-sky-200/80 transition-colors"
+                title={`Open official source in new tab: ${link.url}`}
+              >
+                <span>Open Official Source</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+
+              {link.fallbackUrl && (
+                <a
+                  href={link.fallbackUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium transition-colors"
+                  title={`Open official mirror: ${link.fallbackUrl}`}
+                >
+                  <span>{link.fallbackLabel}</span>
+                  <ExternalLink className="w-3 h-3 text-slate-400" />
+                </a>
+              )}
+            </div>
+          </div>
         ))}
       </div>
 

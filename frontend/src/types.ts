@@ -51,6 +51,9 @@ export interface PolicyAnalysisResult {
   created_at: string;
   character_count: number;
   raw_text_preview: string;
+  is_truncated?: boolean;
+  unanalysed_chars_count?: number;
+  processing_notes?: string;
   summary: {
     total_clauses: number;
     categories_present: ClauseCategory[];
@@ -113,8 +116,11 @@ export interface RedressalDraft {
 
 export type RequestStatus =
   | 'draft'
+  | 'saved'
   | 'sent_manually'
   | 'acknowledged_by_service'
+  | 'under_review'
+  | 'in_progress'
   | 'follow_up_required'
   | 'resolved'
   | 'escalated';

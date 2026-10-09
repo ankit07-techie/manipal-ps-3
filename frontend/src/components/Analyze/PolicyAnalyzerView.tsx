@@ -14,6 +14,7 @@ import {
   ShieldAlert,
   Loader2,
   Check,
+  ExternalLink,
 } from 'lucide-react';
 import { PolicyAnalysisResult, AnalysedClause, ClauseCategory, InformationState } from '../../types';
 import { SAMPLE_POLICIES, analyzePolicy } from '../../services/api';
@@ -403,15 +404,22 @@ export const PolicyAnalyzerView: React.FC<PolicyAnalyzerViewProps> = ({
                   {/* Statutory Legal Grounding & Suggested Action Footer */}
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-3 border-t border-slate-100 text-xs">
                     {clause.legal_reference ? (
-                      <div className="flex items-center gap-2 text-sky-800">
+                      <a
+                        href={clause.legal_reference.official_url || 'https://www.meity.gov.in/content/digital-personal-data-protection-act-2023-dpdp-act'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-sky-800 hover:text-sky-950 group transition-colors"
+                        title="Open Official Statutory Reference on MeitY Portal"
+                      >
                         <Scale className="w-4 h-4 text-sky-600 shrink-0" />
-                        <span className="font-semibold">
+                        <span className="font-semibold underline decoration-sky-300 underline-offset-2">
                           {clause.legal_reference.statute} • {clause.legal_reference.section}:
                         </span>
-                        <span className="text-slate-500 font-normal line-clamp-1">
+                        <span className="text-slate-500 font-normal line-clamp-1 group-hover:text-slate-700">
                           {clause.legal_reference.summary}
                         </span>
-                      </div>
+                        <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-sky-600 shrink-0 opacity-70 group-hover:opacity-100" />
+                      </a>
                     ) : (
                       <div />
                     )}

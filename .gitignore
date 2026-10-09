@@ -34,3 +34,8 @@ Thumbs.db
 tmp/
 *.tmp
 prd_extracted.txt
+
+# Local data store
+backend/data/*.json
+backend/data/*.corrupt*
+!backend/data/.gitkeep

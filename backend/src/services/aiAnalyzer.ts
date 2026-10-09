@@ -88,6 +88,8 @@ function analyzeWithRuleBasedParser(rawText: string, sourceLabel: string): Analy
   const rules: {
     category: ClauseCategory;
     keywords: string[];
+    exclusions?: string[];
+    ambiguousTriggers?: string[];
     explanation: string;
     question: string;
     risk: 'low' | 'moderate' | 'high' | 'neutral';
@@ -95,7 +97,25 @@ function analyzeWithRuleBasedParser(rawText: string, sourceLabel: string): Analy
   }[] = [
     {
       category: 'data_collection',
-      keywords: ['collect', 'information we collect', 'personal data', 'device information', 'location data', 'cookies', 'identifiers'],
+      keywords: [
+        'collect',
+        'collected',
+        'captures',
+        'ingest',
+        'personal information',
+        'personal data',
+        'device information',
+        'location data',
+        'cookies',
+        'identifiers',
+        'telemetry',
+        'gps coordinate',
+        'laboratory test results',
+        'prescription scans',
+        'session tokens',
+        'fingerprints',
+      ],
+      exclusions: ['all rights reserved', 'physical security'],
       explanation: 'Specifies the types of personal identifiers, device telemetry, or usage data collected by the service.',
       question: 'What specific categories of device and location data are collected, and can I use the service with minimized collection?',
       risk: 'moderate',
@@ -103,7 +123,22 @@ function analyzeWithRuleBasedParser(rawText: string, sourceLabel: string): Analy
     },
     {
       category: 'purpose_specification',
-      keywords: ['purpose', 'how we use', 'use your information', 'processing', 'legitimate use'],
+      keywords: [
+        'purpose',
+        'how we use',
+        'use your information',
+        'processing',
+        'legitimate use',
+        'utilize user telemetry',
+        'utilize your',
+        'to process loan',
+        'general platform enhancements',
+        'commercial opportunities',
+        'in order to provide',
+        'used strictly for',
+      ],
+      exclusions: ['physical security guards', 'all rights reserved'],
+      ambiguousTriggers: ['general platform enhancements', 'commercial opportunities', 'any purpose', 'as we see fit'],
       explanation: 'Details the business and operational purposes for which collected consumer information is processed.',
       question: 'Is my data used exclusively for service delivery, or also for algorithmic profiling and marketing?',
       risk: 'low',
@@ -111,7 +146,23 @@ function analyzeWithRuleBasedParser(rawText: string, sourceLabel: string): Analy
     },
     {
       category: 'third_party_sharing',
-      keywords: ['third party', 'share your', 'disclose', 'partners', 'affiliates', 'service providers', 'advertising partners', 'vendors'],
+      keywords: [
+        'third party',
+        'third-party',
+        'share your',
+        'disclose',
+        'logistics courier partners',
+        'cloud data centers',
+        'hosted in',
+        'cross-border',
+        'advertising networks',
+        'affiliates',
+        'service providers',
+        'vendors',
+        'trade your personal data',
+        'monetary consideration',
+      ],
+      exclusions: ['physical security guards', 'all rights reserved'],
       explanation: 'Discloses third-party entities, advertising networks, or vendors with whom your information may be shared.',
       question: 'Which specific third-party partners receive my data, and do they process it outside India?',
       risk: 'high',
@@ -119,7 +170,21 @@ function analyzeWithRuleBasedParser(rawText: string, sourceLabel: string): Analy
     },
     {
       category: 'retention_period',
-      keywords: ['retention', 'how long we keep', 'retain your data', 'storage duration', 'deletion period'],
+      keywords: [
+        'retention',
+        'how long we keep',
+        'retain',
+        'retained for',
+        'mandatory period of',
+        'statutory duration',
+        'keep your listening logs',
+        'storage duration',
+        'deletion period',
+        'until you delete',
+        'as long as deemed necessary',
+      ],
+      exclusions: ['copyright', 'intellectual property', 'all rights reserved'],
+      ambiguousTriggers: ['as long as deemed necessary', 'as long as we require', 'indefinitely'],
       explanation: 'Defines the timeframe or criteria used to determine how long consumer data is stored before deletion.',
       question: 'For how long is my personal information retained after I close or deactivate my account?',
       risk: 'moderate',
@@ -127,7 +192,19 @@ function analyzeWithRuleBasedParser(rawText: string, sourceLabel: string): Analy
     },
     {
       category: 'consent_and_choices',
-      keywords: ['consent', 'opt out', 'withdraw your consent', 'preferences', 'choices'],
+      keywords: [
+        'consent',
+        'opt out',
+        'opt-out',
+        'withdraw consent',
+        'withdraw your consent',
+        'preferences',
+        'choices',
+        'disable behavioral tracking',
+        'reset device advertising identifiers',
+        'unsubscribe',
+      ],
+      exclusions: ['physical security guards'],
       explanation: 'Outlines the mechanisms available to give, adjust, or withdraw your consent.',
       question: 'How can I withdraw consent with the same ease as granting it, as mandated by DPDP Section 6(4)?',
       risk: 'moderate',
@@ -135,7 +212,18 @@ function analyzeWithRuleBasedParser(rawText: string, sourceLabel: string): Analy
     },
     {
       category: 'consumer_rights',
-      keywords: ['your rights', 'right to access', 'erasure', 'correction', 'rectification', 'delete your account'],
+      keywords: [
+        'your rights',
+        'right to access',
+        'erasure',
+        'correction',
+        'rectification',
+        'delete your account',
+        'under the dpdp act',
+        'right to obtain a summary',
+        'data principal rights',
+      ],
+      exclusions: ['all rights reserved', 'intellectual property rights', 'copyright'],
       explanation: 'Describes your statutory rights to access, correct, or request the erasure of your personal data.',
       question: 'What is the turnaround time for processing a data erasure or access request?',
       risk: 'low',
@@ -143,7 +231,18 @@ function analyzeWithRuleBasedParser(rawText: string, sourceLabel: string): Analy
     },
     {
       category: 'security_practices',
-      keywords: ['security', 'safeguards', 'encryption', 'protect your data', 'unauthorized access'],
+      keywords: [
+        'security',
+        'safeguards',
+        'encryption',
+        'protect your data',
+        'unauthorized access',
+        'tls 1.3',
+        'aes-256',
+        'soc 2',
+        'pci-dss',
+      ],
+      exclusions: ['physical security guards', 'gated access', 'office building'],
       explanation: 'Outlines organizational and technical security measures deployed to safeguard stored consumer data.',
       question: 'Are reasonable encryption standards applied both in transit and at rest for consumer data?',
       risk: 'low',
@@ -151,7 +250,18 @@ function analyzeWithRuleBasedParser(rawText: string, sourceLabel: string): Analy
     },
     {
       category: 'grievance_contact',
-      keywords: ['grievance officer', 'data protection officer', 'dpo', 'contact us', 'privacy@', 'nodal officer', 'complaint'],
+      keywords: [
+        'grievance officer',
+        'data protection officer',
+        'dpo',
+        'nodal privacy officer',
+        'contact us',
+        'privacy@',
+        'nodal officer',
+        'complaint',
+        'grievance@',
+      ],
+      exclusions: ['all rights reserved'],
       explanation: 'Identifies the designated Grievance Officer / DPO and contact channels for resolving consumer privacy complaints.',
       question: 'What is the designated grievance redressal escalation mechanism if a request is not resolved within 30 days?',
       risk: 'low',
@@ -159,26 +269,37 @@ function analyzeWithRuleBasedParser(rawText: string, sourceLabel: string): Analy
     },
   ];
 
-  // Split text into paragraphs
+  // Split text into paragraphs / chunks
   const paragraphs = rawText
     .split(/\n\s*\n|\n(?=[A-Z0-9\.\-\s]{3,40}\n)/)
     .map((p) => p.trim())
-    .filter((p) => p.length > 25);
+    .filter((p) => p.length > 0);
 
   let idCounter = 1;
 
   for (const rule of rules) {
     let matchedParagraph = '';
     let matchedSnippet = '';
+    let isAmbiguousMatch = false;
 
     for (const p of paragraphs) {
       const pLower = p.toLowerCase();
-      const matchedKeyword = rule.keywords.find((k) => pLower.includes(k));
+
+      // Check exclusions first
+      if (rule.exclusions && rule.exclusions.some((ex) => pLower.includes(ex.toLowerCase()))) {
+        continue;
+      }
+
+      const matchedKeyword = rule.keywords.find((k) => pLower.includes(k.toLowerCase()));
       if (matchedKeyword) {
         matchedParagraph = p;
         const sentences = p.split(/(?<=[.?!])\s+/);
-        const matchSentence = sentences.find((s) => s.toLowerCase().includes(matchedKeyword)) || sentences[0] || p;
+        const matchSentence = sentences.find((s) => s.toLowerCase().includes(matchedKeyword.toLowerCase())) || sentences[0] || p;
         matchedSnippet = matchSentence.trim().slice(0, 300);
+
+        if (rule.ambiguousTriggers && rule.ambiguousTriggers.some((tr) => pLower.includes(tr.toLowerCase()))) {
+          isAmbiguousMatch = true;
+        }
         break;
       }
     }
@@ -188,7 +309,7 @@ function analyzeWithRuleBasedParser(rawText: string, sourceLabel: string): Analy
 
     if (matchedSnippet) {
       const verification = verifyEvidenceQuote(matchedSnippet, rawText);
-      const infoState: InformationState = 'stated';
+      const infoState: InformationState = isAmbiguousMatch ? 'unclear' : 'stated';
       const uncertainty = computeUncertaintyLabel(infoState, verification.status);
 
       clauses.push({
@@ -207,7 +328,7 @@ function analyzeWithRuleBasedParser(rawText: string, sourceLabel: string): Analy
         uncertainty_label: uncertainty,
         potential_question: rule.question,
         legal_reference: legalRef,
-        risk_level: rule.risk,
+        risk_level: isAmbiguousMatch ? 'moderate' : rule.risk,
         suggested_action: rule.action,
       });
     } else {
@@ -244,6 +365,14 @@ export async function analyzePolicyText(
   const analysisId = uuidv4();
   let clauses: AnalysedClause[] = [];
 
+  const maxWindow = 30000;
+  const isTruncated = rawText.length > maxWindow;
+  const unanalysedCharsCount = isTruncated ? rawText.length - maxWindow : 0;
+  const textToAnalyze = isTruncated ? rawText.slice(0, maxWindow) : rawText;
+  let processingNotes = isTruncated
+    ? `Analysis bounded to first ${maxWindow} characters (${unanalysedCharsCount} trailing characters unanalysed).`
+    : 'Full document analyzed across all sections.';
+
   if (config.geminiApiKey) {
     try {
       const genAI = new GoogleGenerativeAI(config.geminiApiKey);
@@ -274,7 +403,7 @@ Analyze the following privacy policy document. Return a JSON array of extracted 
 
 DOCUMENT TEXT:
 """
-${rawText.slice(0, 30000)}
+${textToAnalyze}
 """
 `;
 
@@ -318,7 +447,12 @@ ${rawText.slice(0, 30000)}
 
   // Fallback to deterministic rule-based analysis if AI clauses are empty
   if (clauses.length === 0) {
-    clauses = analyzeWithRuleBasedParser(rawText, sourceLabel);
+    clauses = analyzeWithRuleBasedParser(textToAnalyze, sourceLabel);
+    if (!isTruncated) {
+      processingNotes = 'Full document analyzed across all sections using deterministic rule & semantic fallback engine.';
+    } else {
+      processingNotes = `Analysis bounded to first ${maxWindow} characters (${unanalysedCharsCount} trailing characters unanalysed) using deterministic fallback engine.`;
+    }
   }
 
   // Verification metrics calculation
@@ -360,6 +494,9 @@ ${rawText.slice(0, 30000)}
     created_at: new Date().toISOString(),
     character_count: rawText.length,
     raw_text_preview: rawText.slice(0, 1000) + (rawText.length > 1000 ? '...' : ''),
+    is_truncated: isTruncated,
+    unanalysed_chars_count: unanalysedCharsCount,
+    processing_notes: processingNotes,
     summary: {
       total_clauses: clauses.length,
       categories_present: categoriesPresent,
