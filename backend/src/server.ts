@@ -5,7 +5,7 @@ import { analyzeRouter } from './routes/analyzeRoutes.js';
 import { preferenceRouter } from './routes/preferenceRoutes.js';
 import { redressalRouter } from './routes/redressalRoutes.js';
 import { legalRouter } from './routes/legalRoutes.js';
-import { securityHeaders } from './middleware/security.js';
+import { securityHeaders, normalizeAllowedOrigins } from './middleware/security.js';
 
 export const app = express();
 
@@ -15,7 +15,7 @@ app.use(securityHeaders);
 // Middleware
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? (process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : '*')
+    ? normalizeAllowedOrigins(process.env.ALLOWED_ORIGINS)
     : '*',
   methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Test-Rate-Limit'],

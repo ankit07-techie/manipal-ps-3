@@ -8,7 +8,7 @@ import { generateRedressalDraft } from '../src/services/draftGenerator.js';
 import { storage, StorageAdapter } from '../src/storage/storageAdapter.js';
 import { createSyntheticDocx } from './fixtures/syntheticDocx.js';
 import { OFFICIAL_LEGAL_URLS, DPDP_ACT_2023_SOURCES, getStatutoryReferenceForCategory } from '../src/data/legalSources.js';
-import { securityHeaders, createRateLimiter } from '../src/middleware/security.js';
+import { securityHeaders, createRateLimiter, normalizeAllowedOrigins } from '../src/middleware/security.js';
 
 const SAMPLE_POLICY_TEXT = `
 SAMPLE E-COMMERCE PRIVACY NOTICE (INDIA)
@@ -616,7 +616,24 @@ async function runTestSuite() {
     assert.strictEqual(mockHeaders['x-content-type-options'], 'nosniff');
     assert.strictEqual(mockHeaders['x-frame-options'], 'SAMEORIGIN');
 
-    // 2. Rate limiter test
+    // 2. CORS ALLOWED_ORIGINS Normalization test
+    assert.strictEqual(normalizeAllowedOrigins(undefined), '*');
+    assert.strictEqual(normalizeAllowedOrigins(''), '*');
+    assert.strictEqual(normalizeAllowedOrigins('   '), '*');
+    assert.deepStrictEqual(
+      normalizeAllowedOrigins('https://manipal-ps-3.vercel.app/, https://example.com/ '),
+      ['https://manipal-ps-3.vercel.app', 'https://example.com']
+    );
+    assert.deepStrictEqual(
+      normalizeAllowedOrigins('https://app.example.com///,https://sub.domain.org/'),
+      ['https://app.example.com', 'https://sub.domain.org']
+    );
+    assert.deepStrictEqual(
+      normalizeAllowedOrigins('https://app1.com, , https://app2.com'),
+      ['https://app1.com', 'https://app2.com']
+    );
+
+    // 3. Rate limiter test
     const testLimiter = createRateLimiter({ windowMs: 60_000, max: 3, message: 'Too many requests' });
     const standardReq: any = {
       headers: {},

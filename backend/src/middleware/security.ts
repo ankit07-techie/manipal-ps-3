@@ -102,3 +102,23 @@ export const draftRateLimiter = createRateLimiter({
   max: 40,             // 40 draft generation requests per minute
   message: 'Draft generation rate limit exceeded. Please wait before generating additional communications.',
 });
+
+/**
+ * Normalizes the ALLOWED_ORIGINS environment variable:
+ * - Splits on commas
+ * - Trims whitespace
+ * - Removes trailing slashes
+ * - Filters out empty strings
+ * Returns '*' if raw string is undefined, empty, or whitespace.
+ */
+export function normalizeAllowedOrigins(raw?: string): string[] | '*' {
+  if (!raw || !raw.trim()) {
+    return '*';
+  }
+  const origins = raw
+    .split(',')
+    .map((o) => o.trim().replace(/\/+$/, ''))
+    .filter(Boolean);
+
+  return origins.length > 0 ? origins : '*';
+}
