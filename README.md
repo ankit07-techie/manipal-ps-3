@@ -258,11 +258,11 @@ sequenceDiagram
     participant Router as Express API Router
     participant Engine as Engine / Storage Adapter
 
-    Client->>SecMW: HTTP Request (e.g., POST /api/analyze)
-    Note over SecMW: Injects Security Headers:<br/>X-Content-Type-Options: nosniff<br/>X-Frame-Options: SAMEORIGIN<br/>X-XSS-Protection: 1; mode=block<br/>Strict-Transport-Security: max-age=31536000
+    Client->>SecMW: HTTP Request (e.g. POST /api/analyze)
+    Note over SecMW: Applies Security Headers:<br/>nosniff, SAMEORIGIN,<br/>XSS protection, and HSTS
     SecMW->>RateMW: Pass Request with Client IP
 
-    Note over RateMW: Evaluates Client IP against in-memory sliding window.<br/>In production, ignores untrusted x-test-rate-limit headers.
+    Note over RateMW: Evaluates Client IP against sliding window<br/>In production, ignores untrusted x-test-rate-limit
     alt Request Count Exceeds Window Limit (30/min or 40/min)
         RateMW-->>Client: 429 Too Many Requests (Rate limit exceeded)
     else Request Within Permitted Limits
