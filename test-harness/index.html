@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PrivacyLens — Phase 3 Local Testing Harness</title>
+  <style>
+    body { font-family: monospace; background: #0f172a; color: #e2e8f0; margin: 0; padding: 20px; }
+    h1, h2, h3 { color: #38bdf8; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .panel { background: #1e293b; border: 1px solid #334155; padding: 15px; border-radius: 6px; }
+    textarea, input, select { width: 100%; background: #0f172a; color: #38bdf8; border: 1px solid #475569; padding: 8px; font-family: monospace; margin: 5px 0 10px; box-sizing: border-box; }
+    button { background: #0284c7; color: white; border: none; padding: 8px 14px; cursor: pointer; border-radius: 4px; font-weight: bold; margin-right: 5px; }
+    button:hover { background: #0369a1; }
+    .badge { display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: bold; }
+    .badge-verified { background: #065f46; color: #6ee7b7; border: 1px solid #059669; }
+    .badge-unverified { background: #7f1d1d; color: #fca5a5; border: 1px solid #dc2626; }
+    .badge-approximate { background: #78350f; color: #fcd34d; border: 1px solid #d97706; }
+    .clause-card { background: #0f172a; border-left: 4px solid #38bdf8; padding: 10px; margin-bottom: 10px; border-radius: 4px; }
+    .quote-box { background: #182234; border: 1px dashed #475569; padding: 6px; margin-top: 6px; font-size: 12px; color: #94a3b8; }
+    pre { background: #020617; padding: 10px; overflow: auto; border: 1px solid #1e293b; max-height: 250px; font-size: 11px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>PrivacyLens (Phase 3 Testing Harness)</h1>
+    <p>Minimal functional harness to test backend extraction, quote verification, preference records, and redressal drafts.</p>
+
+    <div style="margin-bottom: 15px;">
+      <button onclick="loadSamplePolicy('ecommerce')">Load E-Commerce Sample</button>
+      <button onclick="loadSamplePolicy('fintech')">Load FinTech Sample</button>
+      <button onclick="loadSamplePolicy('minimal')">Load Missing/Omitted Sample</button>
+      <button onclick="checkHealth()">Test Backend Health</button>
+    </div>
+
+    <div id="health-status" style="margin-bottom: 15px; color: #4ade80;"></div>
+
+    <div class="grid">
+      <!-- Left Column: Input & Controls -->
+      <div>
+        <div class="panel">
+          <h2>1. Policy Ingestion</h2>
+          <label>Source Label:</label>
+          <input type="text" id="source-label" value="Sample Shopping App Privacy Notice" />
+          
+          <label>Policy Text:</label>
+          <textarea id="policy-text" rows="12" placeholder="Paste privacy policy text here..."></textarea>
+          
+          <button onclick="runAnalysis()">Run Policy Analysis</button>
+        </div>
+
+        <div class="panel" style="margin-top: 20px;">
+          <h2>3. Redressal & Grievance Studio Test</h2>
+          <label>Concern Type:</label>
+          <select id="concern-type">
+            <option value="consent_withdrawal">Withdrawal of Consent (DPDP Sec 6(4))</option>
+            <option value="data_erasure">Request Data Erasure (DPDP Sec 12)</option>
+            <option value="unclear_sharing">Inquiry on Third-Party Sharing (DPDP Sec 5)</option>
+            <option value="grievance_inquiry">Formal Grievance Complaint (DPDP Sec 13)</option>
+          </select>
+
+          <label>Service / Company Name:</label>
+          <input type="text" id="service-name" value="QuickMart India Pvt Ltd" />
+
+          <label>Recipient Email:</label>
+          <input type="text" id="recipient-email" value="grievance.officer@quickmart.in" />
+
+          <label>Consumer Name & Identifier:</label>
+          <input type="text" id="consumer-name" value="Aarav Sharma (aarav.sharma@example.com)" />
+
+          <label>Specific Consumer Notes:</label>
+          <textarea id="consumer-notes" rows="3" placeholder="Additional context or account details..."></textarea>
+
+          <button onclick="generateDraft()">Generate Grievance Draft</button>
+          <button onclick="saveAsTrackedRequest()">Save as Tracked Request</button>
+        </div>
+
+        <div class="panel" style="margin-top: 20px;">
+          <h2>4. Consumer Preferences Test</h2>
+          <button onclick="fetchPreferences()">Refresh Preferences</button>
+          <div id="preferences-list" style="margin-top: 10px;"></div>
+        </div>
+      </div>
+
+      <!-- Right Column: Results & Verification Explorer -->
+      <div>
+        <div class="panel">
+          <h2>2. Evidence & Clause Verification Results</h2>
+          <div id="analysis-summary">Click "Run Policy Analysis" or load a sample.</div>
+          <div id="clauses-container" style="margin-top: 15px; max-height: 600px; overflow-y: auto;"></div>
+        </div>
+
+        <div class="panel" style="margin-top: 20px;">
+          <h2>Generated Redressal Draft & Timeline</h2>
+          <div id="draft-output">No draft generated yet.</div>
+          <div id="tracked-requests" style="margin-top: 15px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'http://127.0.0.1:4000/api';
+    let currentAnalysis = null;
+    let currentDraft = null;
+
+    const SAMPLES = {
+      ecommerce: `QUICKMART PRIVACY NOTICE (INDIA)
+Last updated: January 2025
+
+1. INFORMATION WE COLLECT
+We collect your full name, mobile number, shipping address, and payment identifiers. We automatically log IP addresses, device identifiers, and approximate location data when you browse our catalog.
+
+2. PURPOSE OF PROCESSING
+Your data is used to process purchases, coordinate package delivery, prevent unauthorized transactions, and send service alerts. With your consent, we send promotional SMS.
+
+3. THIRD-PARTY SHARING
+We share delivery addresses with verified logistics partners. Anonymized usage data is shared with analytics vendors. We do not sell personal information.
+
+4. RETENTION PERIOD
+We retain consumer transaction records for 7 years to comply with statutory taxation requirements in India. Unlinked browsing logs are purged after 90 days.
+
+5. YOUR RIGHTS UNDER DPDP ACT 2023
+You have the right to access your personal data, request correction of inaccurate records, or request deletion of data no longer required for service delivery.
+
+6. GRIEVANCE OFFICER
+Contact our Grievance Officer:
+Name: Rajesh Verma
+Email: grievance.officer@quickmart.in
+Address: Sector 44, Gurugram, Haryana`,
+
+      fintech: `FINSECURE DIGITAL WALLET PRIVACY POLICY
+1. DATA COLLECTION
+We collect Aadhaar-based KYC information, PAN card numbers, bank account details, and real-time biometric verification tokens.
+
+2. SHARING WITH CREDIT BUREAUS
+We disclose your loan repayment history to licensed credit rating agencies (CIBIL, Experian) as required by RBI regulations.
+
+3. DATA RETENTION
+Financial transaction audit trails are retained for a minimum of 10 years as mandated under Prevention of Money Laundering Act (PMLA) rules.
+
+4. GRIEVANCE REDRESSAL
+Principal Nodal Officer: nodalofficer@finsecure.in. Redressal timeframe: 30 days.`,
+
+      minimal: `TEST OMITTED POLICY
+We collect email addresses to deliver newsletters. Contact support@test.com.`
+    };
+
+    function loadSamplePolicy(key) {
+      document.getElementById('policy-text').value = SAMPLES[key] || '';
+      document.getElementById('source-label').value = key.toUpperCase() + ' Sample Policy';
+    }
+
+    async function checkHealth() {
+      try {
+        const res = await fetch(API_URL + '/health');
+        const data = await res.json();
+        document.getElementById('health-status').innerText = '✅ Backend Connected: ' + JSON.stringify(data);
+      } catch (err) {
+        document.getElementById('health-status').innerText = '❌ Backend connection error: ' + err.message;
+      }
+    }
+
+    async function runAnalysis() {
+      const text = document.getElementById('policy-text').value;
+      const source_label = document.getElementById('source-label').value;
+      const summaryDiv = document.getElementById('analysis-summary');
+      const clausesDiv = document.getElementById('clauses-container');
+
+      summaryDiv.innerText = 'Analyzing policy and verifying evidence...';
+      clausesDiv.innerHTML = '';
+
+      try {
+        const res = await fetch(API_URL + '/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, source_label })
+        });
+        const data = await res.json();
+        currentAnalysis = data;
+
+        summaryDiv.innerHTML = `
+          <strong>Clauses Extracted:</strong> ${data.summary.total_clauses} |
+          <strong>Verification Rate:</strong> <span style="color:#4ade80;">${data.summary.evidence_verification_rate}%</span> |
+          <strong>Concerns/Risks:</strong> ${data.summary.primary_concerns_count}
+          <div style="font-size:11px; margin-top:5px; color:#94a3b8;">${data.disclaimer}</div>
+        `;
+
+        clausesDiv.innerHTML = data.clauses.map(c => `
+          <div class="clause-card">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <strong>${c.category_label}</strong>
+              <div>
+                <span class="badge badge-${c.evidence_status}">${c.evidence_status.toUpperCase()}</span>
+                <span class="badge" style="background:#334155;">${c.information_state}</span>
+              </div>
+            </div>
+            <p style="margin:6px 0 4px; font-size:13px;">${c.plain_language_explanation}</p>
+            ${c.evidence_quote ? `<div class="quote-box"><strong>Quotation:</strong> "${c.evidence_quote}"</div>` : `<div class="quote-box" style="color:#f87171;">No matching quotation in analysed text.</div>`}
+            ${c.legal_reference ? `<div style="font-size:11px; margin-top:6px; color:#38bdf8;"><strong>Statutory Context:</strong> ${c.legal_reference.statute} — ${c.legal_reference.section} (${c.legal_reference.title})</div>` : ''}
+          </div>
+        `).join('');
+      } catch (err) {
+        summaryDiv.innerHTML = `<span style="color:#f87171;">Analysis failed: ${err.message}</span>`;
+      }
+    }
+
+    async function generateDraft() {
+      const concern_type = document.getElementById('concern-type').value;
+      const service_name = document.getElementById('service-name').value;
+      const recipient_email = document.getElementById('recipient-email').value;
+      const consumer_name = document.getElementById('consumer-name').value;
+      const user_notes = document.getElementById('consumer-notes').value;
+
+      const outputDiv = document.getElementById('draft-output');
+      outputDiv.innerText = 'Generating legal grievance draft...';
+
+      try {
+        const res = await fetch(API_URL + '/redressal/draft', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            concern_type,
+            service_name,
+            recipient_email,
+            consumer_name,
+            user_notes,
+            selected_clause_ids: currentAnalysis ? currentAnalysis.clauses.map(c => c.clause_id) : []
+          })
+        });
+
+        const draft = await res.json();
+        currentDraft = draft;
+
+        outputDiv.innerHTML = `
+          <div style="background:#020617; padding:10px; border:1px solid #334155; border-radius:4px;">
+            <div style="font-weight:bold; color:#38bdf8; margin-bottom:6px;">${draft.subject}</div>
+            <pre style="white-space:pre-wrap;">${draft.body}</pre>
+            <div style="margin-top:8px;">
+              <strong>Citations:</strong>
+              ${draft.statutory_citations.map(c => `<div style="font-size:11px; color:#4ade80;">• ${c.statute} (${c.section}): ${c.title}</div>`).join('')}
+            </div>
+          </div>
+        `;
+      } catch (err) {
+        outputDiv.innerHTML = `<span style="color:#f87171;">Draft generation failed: ${err.message}</span>`;
+      }
+    }
+
+    async function saveAsTrackedRequest() {
+      if (!currentDraft) {
+        alert('Please generate a draft first.');
+        return;
+      }
+
+      try {
+        const res = await fetch(API_URL + '/redressal/requests', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            service_name: currentDraft.service_name,
+            recipient_email: currentDraft.recipient_email,
+            concern_type: currentDraft.concern_type,
+            subject: currentDraft.subject,
+            body_content: currentDraft.body,
+            status: 'draft',
+            draft_id: currentDraft.draft_id
+          })
+        });
+        const saved = await res.json();
+        alert('Request saved and tracked with ID: ' + saved.id);
+        fetchTrackedRequests();
+      } catch (err) {
+        alert('Failed to save request: ' + err.message);
+      }
+    }
+
+    async function fetchTrackedRequests() {
+      try {
+        const res = await fetch(API_URL + '/redressal/requests');
+        const data = await res.json();
+        const container = document.getElementById('tracked-requests');
+        if (data.requests.length === 0) {
+          container.innerHTML = '<div style="color:#64748b;">No tracked requests yet.</div>';
+          return;
+        }
+        container.innerHTML = '<h3>Tracked Requests & Timeline</h3>' + data.requests.map(r => `
+          <div style="background:#0f172a; border:1px solid #334155; padding:8px; margin-bottom:8px; border-radius:4px;">
+            <div style="display:flex; justify-content:space-between;">
+              <strong>${r.service_name} (${r.id})</strong>
+              <span class="badge" style="background:#0369a1;">${r.status.toUpperCase()}</span>
+            </div>
+            <div style="font-size:12px; margin:4px 0;">${r.subject}</div>
+            <div style="font-size:11px; color:#94a3b8;">Events: ${r.events.map(e => `[${e.event_type} @ ${new Date(e.timestamp).toLocaleTimeString()}]`).join(' → ')}</div>
+            <button style="margin-top:6px; font-size:11px; padding:4px 8px;" onclick="markSent('${r.id}')">Mark as Sent</button>
+          </div>
+        `).join('');
+      } catch (err) {
+        console.error('Fetch requests error:', err);
+      }
+    }
+
+    async function markSent(id) {
+      await fetch(API_URL + '/redressal/requests/' + id + '/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event_type: 'marked_as_sent',
+          description: 'Dispatched manually via email by consumer',
+          statusChange: 'sent_manually'
+        })
+      });
+      fetchTrackedRequests();
+    }
+
+    async function fetchPreferences() {
+      try {
+        const res = await fetch(API_URL + '/preferences');
+        const data = await res.json();
+        const listDiv = document.getElementById('preferences-list');
+        listDiv.innerHTML = data.preferences.map(p => `
+          <div style="background:#0f172a; border:1px solid #334155; padding:8px; margin-bottom:6px; border-radius:4px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <strong>${p.title}</strong>
+              <button style="padding:2px 8px; font-size:11px; background:${p.current_value ? '#059669':'#dc2626'};" onclick="togglePref('${p.id}', ${!p.current_value})">
+                ${p.current_value ? 'ALLOWED' : 'BLOCKED'}
+              </button>
+            </div>
+            <div style="font-size:11px; color:#94a3b8; margin:4px 0;">${p.description}</div>
+            <div style="font-size:10px; color:#fcd34d;">⚠️ Status: ${p.status_explanation}</div>
+          </div>
+        `).join('');
+      } catch (err) {
+        console.error('Fetch prefs error:', err);
+      }
+    }
+
+    async function togglePref(id, newVal) {
+      await fetch(API_URL + '/preferences/' + id, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          current_value: newVal,
+          status: 'local_record',
+          status_explanation: 'Locally recorded preference updated by user.'
+        })
+      });
+      fetchPreferences();
+    }
+
+    // Auto-check health & fetch preferences on load
+    checkHealth();
+    fetchPreferences();
+    fetchTrackedRequests();
+  </script>
+</body>
+</html>
