@@ -3,6 +3,7 @@ import multer from 'multer';
 import { extractTextFromBuffer } from '../services/pdfExtractor.js';
 import { analyzePolicyText } from '../services/aiAnalyzer.js';
 import { storage } from '../storage/storageAdapter.js';
+import { analysisRateLimiter } from '../middleware/security.js';
 
 export const analyzeRouter = Router();
 
@@ -13,14 +14,14 @@ const upload = multer({
 });
 
 // POST /api/analyze — Accepts JSON { text, source_label } or file upload
-analyzeRouter.post('/', upload.single('file'), async (req: Request, res: Response): Promise<void> => {
+analyzeRouter.post('/', analysisRateLimiter, upload.single('file'), async (req: Request, res: Response): Promise<void> => {
   try {
     let rawText = '';
     let sourceLabel = req.body.source_label || 'Pasted Privacy Policy';
 
     if (req.file) {
       sourceLabel = req.body.source_label || req.file.originalname;
-      const extracted = await extractTextFromBuffer(req.file.buffer, req.file.mimetype);
+      const extracted = await extractTextFromBuffer(req.file.buffer, req.file.mimetype, req.file.originalname);
       rawText = extracted.rawText;
     } else if (req.body.text && typeof req.body.text === 'string') {
       rawText = req.body.text.trim();

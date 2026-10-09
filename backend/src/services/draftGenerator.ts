@@ -71,16 +71,16 @@ Dear Grievance Officer,
 
 I am writing as a registered consumer / Data Principal of ${serviceName} (Account identifier: ${consumerId}).
 
-Pursuant to Section 6(4) of the Digital Personal Data Protection Act, 2023, I hereby exercise my statutory right to WITHDRAW CONSENT for the processing of my personal data for secondary purposes, marketing communications, and non-essential third-party sharing.
+Pursuant to Section 6(4) of the Digital Personal Data Protection Act, 2023 (enacted and notified under Gazette G.S.R. 843(E)), I hereby exercise my statutory entitlement to WITHDRAW CONSENT for the processing of my personal data for secondary purposes, marketing communications, algorithmic profiling, and non-essential third-party sharing.
 
 ${userNotes ? `SPECIFIC CONSUMER CONTEXT:\n${userNotes}\n` : ''}${clauseEvidenceBlock}
 
-STATUTORY BASIS & REQUESTED ACTION:
-1. Cease processing of my personal data for the specified purposes immediately upon receipt of this notice.
-2. In accordance with Section 8(7) of the DPDP Act 2023, erase all personal data processed on the basis of consent, unless retention is strictly mandated under applicable law.
-3. Provide formal written acknowledgement confirming the effective date of this consent withdrawal and subsequent data handling.
+STATUTORY GROUNDS & REQUESTED ACTIONS:
+1. Cease processing of my personal data for the specified consent-based purposes upon receipt of this notice.
+2. In accordance with Section 8(7) of the DPDP Act 2023, erase all personal data processed on the basis of consent, except where continued retention is strictly required to comply with applicable statutory tax, financial, or regulatory obligations.
+3. Provide formal written acknowledgement confirming the receipt of this withdrawal and specifying any data categories retained under statutory legal exemptions.
 
-I look forward to your prompt response within the statutory timeline.
+I look forward to your prompt response through your designated grievance redressal mechanism.
 
 Sincerely,
 ${consumerName}
@@ -102,15 +102,16 @@ SUBJECT: Request for Erasure of Personal Data under Section 12 of the DPDP Act, 
 
 Dear Grievance Officer,
 
-I am writing as a Data Principal regarding my account and personal data held by ${serviceName} (Account identifier: ${consumerId}).
+I am writing as a Data Principal regarding personal data held by ${serviceName} (Account identifier: ${consumerId}).
 
-Under Section 12(1) of the Digital Personal Data Protection Act, 2023, a Data Principal has the right to the erasure of personal data that is no longer necessary for the purpose for which it was processed.
+Under Section 12 of the Digital Personal Data Protection Act, 2023, a Data Principal has the right to seek the erasure of personal data that is no longer necessary for the purpose for which it was processed.
 
 ${userNotes ? `SPECIFIC DETAILS OF ERASURE REQUEST:\n${userNotes}\n` : ''}${clauseEvidenceBlock}
 
 REQUESTED RELIEF:
-1. Permanently erase all personal data, behavioral telemetry, location histories, and associated identifiers stored across your systems and third-party processors.
-2. Provide written confirmation of data deletion or specify any lawful exception under the DPDP Act 2023 requiring continued retention.
+1. Erase personal data, telemetry, and associated account records that are no longer necessary for primary service fulfillment.
+2. In accordance with the Section 8(7) and Section 12 statutory provisos, if any category of my data must be retained under applicable statutory or regulatory requirements (e.g. tax, accounting, or anti-fraud laws), please identify the specific legal ground and applicable retention timeframe.
+3. Provide written confirmation of the action taken.
 
 Sincerely,
 ${consumerName}
@@ -129,22 +130,22 @@ Email: ${recipientEmail}
 
 Date: ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
 
-SUBJECT: Inquiry & Clarification on Third-Party Data Sharing under DPDP Act 2023 Section 5
+SUBJECT: Inquiry & Clarification on Data Sharing Practices under DPDP Act 2023 Section 5
 
 Dear Grievance Officer,
 
-I am a consumer of ${serviceName} (Identifier: ${consumerId}) seeking clarification on the data sharing practices described in your privacy notice.
+I am a consumer of ${serviceName} (Identifier: ${consumerId}) seeking clarification on the personal data sharing and disclosure practices set forth in your privacy notice.
 
-Under Section 5 of the Digital Personal Data Protection Act, 2023, data fiduciaries must give clear notice specifying the categories of personal data collected and the precise purposes and entities with whom such data is shared.
+Under Section 5 of the Digital Personal Data Protection Act, 2023, data fiduciaries are required to provide clear, itemised notice detailing the categories of personal data processed, the purposes of processing, and third-party disclosure channels.
 
-${userNotes ? `CONSUMER CONCERN:\n${userNotes}\n` : ''}${clauseEvidenceBlock}
+${userNotes ? `CONSUMER CONCERN / INQUIRY CONTEXT:\n${userNotes}\n` : ''}${clauseEvidenceBlock}
 
 CLARIFICATION REQUESTED:
-1. An itemised list of third-party recipients, SDKs, and marketing networks that have received or currently process my personal data.
-2. Clarification on whether cross-border transfers occur and the safeguards in place.
-3. Steps to restrict sharing exclusively to core service fulfillment.
+1. An itemised summary of third-party partners, advertising networks, or analytics vendors that have received or process my personal data.
+2. Clarification on whether cross-border data transfers occur and the safeguards in place.
+3. Guidance on available options to restrict non-essential third-party sharing.
 
-Please provide a formal response within the period stipulated under the DPDP Rules.
+Please provide a formal response through your designated redressal channel.
 
 Sincerely,
 ${consumerName}
@@ -162,20 +163,20 @@ Email: ${recipientEmail}
 
 Date: ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
 
-SUBJECT: Formal Consumer Grievance under Section 13 of the DPDP Act, 2023
+SUBJECT: Consumer Privacy Inquiry & Redressal Request under Section 13 of the DPDP Act, 2023
 
 Dear Grievance Officer,
 
-I am writing to register a formal data privacy grievance regarding ${serviceName} (Account identifier: ${consumerId}).
+I am writing to submit a formal privacy inquiry and request for redressal regarding ${serviceName} (Account identifier: ${consumerId}).
 
-Pursuant to Section 13 of the Digital Personal Data Protection Act, 2023, I am submitting this grievance to your designated redressal mechanism.
+Pursuant to Section 13 of the Digital Personal Data Protection Act, 2023, I am submitting this matter to your designated internal grievance redressal mechanism for review and resolution.
 
-${userNotes ? `DESCRIPTION OF GRIEVANCE:\n${userNotes}\n` : ''}${clauseEvidenceBlock}
+${userNotes ? `DESCRIPTION OF CONSUMER CONCERN:\n${userNotes}\n` : ''}${clauseEvidenceBlock}
 
 EXPECTED RESOLUTION:
-1. Registration and tracking identifier for this grievance.
-2. Concrete corrective measures to address the concerns specified above.
-3. Written determination within 30 days prior to any escalation to the Data Protection Board of India.
+1. Registration and acknowledgment of this request with a tracking reference.
+2. A clear explanation or appropriate corrective steps regarding the matter outlined above.
+3. Written response within the timeline stipulated under applicable DPDP framework rules.
 
 Sincerely,
 ${consumerName}

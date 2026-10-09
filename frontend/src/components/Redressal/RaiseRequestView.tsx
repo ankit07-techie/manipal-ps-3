@@ -10,6 +10,8 @@ import {
   Sparkles,
   Loader2,
   AlertCircle,
+  ExternalLink,
+  Mail,
 } from 'lucide-react';
 import { ConcernType, RedressalDraft, AnalysedClause } from '../../types';
 import { generateDraft, createRequest } from '../../services/api';
@@ -246,7 +248,15 @@ export const RaiseRequestView: React.FC<RaiseRequestViewProps> = ({
                 <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
                   2. Editable Draft Communication
                 </h3>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <a
+                    href={`mailto:${encodeURIComponent(recipientEmail)}?subject=${encodeURIComponent(editableSubject)}&body=${encodeURIComponent(editableBody)}`}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 text-xs font-semibold border border-sky-200 transition-colors"
+                    title="Launch your desktop email client with this drafted text"
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                    <span>Open in Email</span>
+                  </a>
                   <button
                     onClick={handleCopy}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors"
@@ -263,6 +273,9 @@ export const RaiseRequestView: React.FC<RaiseRequestViewProps> = ({
                     <span>Save to Tracked Requests</span>
                   </button>
                 </div>
+              </div>
+              <div className="text-[10px] text-slate-400 mb-2 italic">
+                Opening an email client prepares your communication for manual dispatch; it does not confirm third-party receipt or statutory delivery.
               </div>
 
               <div>
@@ -299,12 +312,20 @@ export const RaiseRequestView: React.FC<RaiseRequestViewProps> = ({
                 </div>
                 <div className="space-y-1.5">
                   {generatedDraft.statutory_citations.map((c, i) => (
-                    <div key={i} className="text-xs text-slate-600 flex items-start gap-1.5">
-                      <span className="font-semibold text-sky-800 shrink-0">
+                    <a
+                      key={i}
+                      href={c.official_url || 'https://www.meity.gov.in/content/digital-personal-data-protection-act-2023-dpdp-act'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-slate-600 flex items-start gap-1.5 hover:text-sky-900 group transition-colors"
+                      title={`Open official statutory provision: ${c.statute} ${c.section}`}
+                    >
+                      <span className="font-semibold text-sky-800 shrink-0 underline decoration-sky-300 underline-offset-2">
                         {c.statute} • {c.section}:
                       </span>
-                      <span>{c.title} — {c.summary}</span>
-                    </div>
+                      <span className="line-clamp-1">{c.title} — {c.summary}</span>
+                      <ExternalLink className="w-3 h-3 text-slate-400 group-hover:text-sky-600 shrink-0 opacity-70 group-hover:opacity-100 mt-0.5" />
+                    </a>
                   ))}
                 </div>
               </div>

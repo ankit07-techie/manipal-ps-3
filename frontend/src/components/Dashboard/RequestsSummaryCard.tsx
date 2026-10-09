@@ -55,13 +55,13 @@ export const RequestsSummaryCard: React.FC<RequestsSummaryCardProps> = ({
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'resolved':
-        return 'bg-emerald-50 text-emerald-700 border-emerald-200/70';
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200/80';
       case 'in_progress':
       case 'sent_manually':
-        return 'bg-amber-50 text-amber-800 border-amber-200/70';
+        return 'bg-amber-50 text-amber-800 border-amber-200/80';
       case 'under_review':
       case 'acknowledged_by_service':
-        return 'bg-sky-50 text-sky-700 border-sky-200/70';
+        return 'bg-blue-50 text-blue-700 border-blue-200/80';
       default:
         return 'bg-slate-100 text-slate-700 border-slate-200';
     }
@@ -84,14 +84,14 @@ export const RequestsSummaryCard: React.FC<RequestsSummaryCardProps> = ({
       <div>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
               <Clock className="w-4 h-4" />
             </div>
             <h3 className="text-sm font-bold text-slate-900">Your Requests</h3>
           </div>
           <button
             onClick={onSeeAll}
-            className="text-xs font-semibold text-sky-600 hover:text-sky-800 flex items-center gap-1 transition-colors"
+            className="text-xs font-semibold text-sky-600 hover:text-sky-800 flex items-center gap-1 transition-colors cursor-pointer"
           >
             <span>See all</span>
             <ChevronRight className="w-3.5 h-3.5" />
@@ -102,11 +102,11 @@ export const RequestsSummaryCard: React.FC<RequestsSummaryCardProps> = ({
           <table className="w-full text-left text-xs">
             <thead>
               <tr className="border-b border-slate-100 text-slate-400 font-semibold text-[11px]">
-                <th className="pb-2.5 font-medium">ID</th>
-                <th className="pb-2.5 font-medium">Request Type</th>
-                <th className="pb-2.5 font-medium">Organisation</th>
-                <th className="pb-2.5 font-medium">Status</th>
-                <th className="pb-2.5 font-medium text-right">Last Updated</th>
+                <th className="pb-3 font-semibold text-slate-400">ID</th>
+                <th className="pb-3 font-semibold text-slate-400">Request Type</th>
+                <th className="pb-3 font-semibold text-slate-400">Organisation</th>
+                <th className="pb-3 font-semibold text-slate-400">Status</th>
+                <th className="pb-3 font-semibold text-slate-400 text-right">Last Updated</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -119,7 +119,7 @@ export const RequestsSummaryCard: React.FC<RequestsSummaryCardProps> = ({
                     onClick={() => onSelectRequest(r as any)}
                     className="group cursor-pointer hover:bg-slate-50/80 transition-colors"
                   >
-                    <td className="py-3 font-semibold text-slate-800 group-hover:text-sky-600 transition-colors">
+                    <td className="py-3 font-semibold text-slate-700 group-hover:text-sky-600 transition-colors">
                       {r.id}
                     </td>
                     <td className="py-3 text-slate-700">
@@ -129,15 +129,15 @@ export const RequestsSummaryCard: React.FC<RequestsSummaryCardProps> = ({
                         ? 'Consent Update'
                         : 'Data Access'}
                     </td>
-                    <td className="py-3 font-medium text-slate-900">{r.service_name}</td>
+                    <td className="py-3 font-medium text-slate-800">{r.service_name}</td>
                     <td className="py-3">
-                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${badge}`}>
+                      <span className={`px-2.5 py-0.5 rounded-md text-[10px] font-semibold border ${badge}`}>
                         {label}
                       </span>
                     </td>
-                    <td className="py-3 text-slate-400 text-right">
+                    <td className="py-3 text-slate-500 text-right">
                       {typeof r.updated_at === 'string' && r.updated_at.includes('T')
-                        ? new Date(r.updated_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+                        ? new Date(r.updated_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
                         : r.updated_at}
                     </td>
                   </tr>
@@ -150,3 +150,4 @@ export const RequestsSummaryCard: React.FC<RequestsSummaryCardProps> = ({
     </div>
   );
 };
+

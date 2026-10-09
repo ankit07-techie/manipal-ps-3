@@ -5,14 +5,20 @@ import { analyzeRouter } from './routes/analyzeRoutes.js';
 import { preferenceRouter } from './routes/preferenceRoutes.js';
 import { redressalRouter } from './routes/redressalRoutes.js';
 import { legalRouter } from './routes/legalRoutes.js';
+import { securityHeaders } from './middleware/security.js';
 
 export const app = express();
 
+// Security Headers (nosniff, frameguard, xssProtection)
+app.use(securityHeaders);
+
 // Middleware
 app.use(cors({
-  origin: '*',
+  origin: process.env.NODE_ENV === 'production' 
+    ? (process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : '*')
+    : '*',
   methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Test-Rate-Limit'],
 }));
 
 app.use(express.json({ limit: '10mb' }));

@@ -33,12 +33,22 @@ export type UncertaintyLabel =
   | 'unverified_omission'
   | 'requires_human_review';
 
+export type CommencementStatus =
+  | 'in_force'
+  | 'phased_commencement'
+  | 'future_enforcement'
+  | 'subject_to_notification';
+
 export interface StatutoryReference {
   statute: string;
   section: string;
   title: string;
   summary: string;
   official_url?: string;
+  rationale?: string;
+  commencement_status?: CommencementStatus;
+  commencement_details?: string;
+  statutory_caveat?: string;
 }
 
 export interface SourceOffsets {
@@ -72,6 +82,9 @@ export interface PolicyAnalysisResult {
   created_at: string;
   character_count: number;
   raw_text_preview: string;
+  is_truncated?: boolean;
+  unanalysed_chars_count?: number;
+  processing_notes?: string;
   summary: {
     total_clauses: number;
     categories_present: ClauseCategory[];
@@ -146,8 +159,11 @@ export interface RedressalDraft {
 
 export type RequestStatus =
   | 'draft'
+  | 'saved'
   | 'sent_manually'
   | 'acknowledged_by_service'
+  | 'under_review'
+  | 'in_progress'
   | 'follow_up_required'
   | 'resolved'
   | 'escalated';

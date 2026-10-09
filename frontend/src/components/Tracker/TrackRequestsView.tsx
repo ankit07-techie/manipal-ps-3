@@ -9,6 +9,7 @@ import {
   MessageSquare,
   ChevronRight,
   ExternalLink,
+  Download,
 } from 'lucide-react';
 import { ConsumerRequestRecord } from '../../types';
 import { getRequests, addRequestEvent, deleteRequest } from '../../services/api';
@@ -74,19 +75,65 @@ export const TrackRequestsView: React.FC = () => {
     }
   };
 
+  const handleExportJSON = () => {
+    const blob = new Blob(
+      [
+        JSON.stringify(
+          {
+            exportDate: new Date().toISOString(),
+            totalRequests: requests.length,
+            requests: requests.map((r) => ({
+              id: r.id,
+              service_name: r.service_name,
+              recipient_email: r.recipient_email,
+              concern_type: r.concern_type,
+              status: r.status,
+              subject: r.subject,
+              created_at: r.created_at,
+              updated_at: r.updated_at,
+              events_count: r.events.length,
+              events: r.events,
+            })),
+          },
+          null,
+          2
+        ),
+      ],
+      { type: 'application/json' }
+    );
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `nyayanet-requests-audit-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200/90 shadow-2xs">
-        <div className="text-xs font-bold text-sky-700 tracking-wider uppercase mb-1">
-          TIMELINE & AUDIT TRAIL
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/90 shadow-2xs">
+        <div>
+          <div className="text-xs font-bold text-sky-700 tracking-wider uppercase mb-1">
+            TIMELINE & AUDIT TRAIL
+          </div>
+          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
+            Track Grievance Requests & Responses
+          </h2>
+          <p className="text-xs text-slate-500 mt-1">
+            Audit the progress of your data subject inquiries, sent dates, company responses, and escalation timelines.
+          </p>
         </div>
-        <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
-          Track Grievance Requests & Responses
-        </h2>
-        <p className="text-xs text-slate-500 mt-1">
-          Audit the progress of your data subject inquiries, sent dates, company responses, and escalation timelines.
-        </p>
+
+        {requests.length > 0 && (
+          <button
+            onClick={handleExportJSON}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors shrink-0"
+            title="Download portable JSON audit record of your submitted requests"
+          >
+            <Download className="w-3.5 h-3.5 text-slate-500" />
+            <span>Export Request Audit (JSON)</span>
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

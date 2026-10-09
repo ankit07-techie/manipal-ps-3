@@ -2,11 +2,12 @@ import { Router, Request, Response } from 'express';
 import { generateRedressalDraft } from '../services/draftGenerator.js';
 import { storage } from '../storage/storageAdapter.js';
 import { RedressalDraftRequest } from '../types.js';
+import { draftRateLimiter } from '../middleware/security.js';
 
 export const redressalRouter = Router();
 
 // POST /api/redressal/draft — Generate an evidence-linked grievance / inquiry draft
-redressalRouter.post('/draft', async (req: Request, res: Response): Promise<void> => {
+redressalRouter.post('/draft', draftRateLimiter, async (req: Request, res: Response): Promise<void> => {
   try {
     const draftRequest: RedressalDraftRequest = req.body;
 

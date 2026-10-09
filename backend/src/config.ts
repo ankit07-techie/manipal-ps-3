@@ -8,7 +8,8 @@ export const config = {
   geminiApiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '',
   geminiModel: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
   maxUploadSizeBytes: 10 * 1024 * 1024, // 10MB
-  storageMode: (process.env.STORAGE_MODE || 'memory') as 'memory' | 'supabase',
+  storageMode: (process.env.STORAGE_MODE || 'file') as 'file' | 'memory' | 'supabase',
+  storageFilePath: process.env.STORAGE_FILE || path.resolve(process.cwd(), 'data', 'nyayanet_store.json'),
   supabaseUrl: process.env.SUPABASE_URL || '',
   supabaseKey: process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || '',
   isProduction: process.env.NODE_ENV === 'production',
