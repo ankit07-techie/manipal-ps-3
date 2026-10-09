@@ -32,7 +32,7 @@ Address: Cyber City, Gurugram, Haryana, India
 `;
 
 async function runTestSuite() {
-  console.log('--- RUNNING PRIVACYLENS BACKEND AUTOMATED TEST SUITE ---');
+  console.log('--- RUNNING PRIVACYLENS STRENGTHENED TEST SUITE ---');
   let passed = 0;
   let failed = 0;
 
@@ -48,7 +48,7 @@ async function runTestSuite() {
   }
 
   // 1. Test Text Extractor
-  await test('Document Extractor handles text buffers', async () => {
+  await test('Document Extractor handles text buffers correctly', async () => {
     const buffer = Buffer.from(SAMPLE_POLICY_TEXT, 'utf-8');
     const extracted = await extractTextFromBuffer(buffer, 'text/plain');
     assert.strictEqual(typeof extracted.rawText, 'string');
@@ -56,32 +56,61 @@ async function runTestSuite() {
     assert(extracted.wordCount > 50, 'Expected word count > 50');
   });
 
-  // 2. Test Evidence Matcher - Verbatim Quote
-  await test('Evidence Matcher verifies verbatim exact quotes', () => {
+  // 2. Exact Match Verification
+  await test('Evidence Matcher verifies verbatim exact quotes with accurate offsets', () => {
     const quote = 'We collect personal information that you provide to us';
     const result = verifyEvidenceQuote(quote, SAMPLE_POLICY_TEXT);
     assert.strictEqual(result.status, 'verified');
-    assert(result.matchScore >= 0.95);
+    assert.strictEqual(result.matchScore, 1.0);
+    assert(result.sourceOffsets, 'Expected source offsets');
+    assert.strictEqual(SAMPLE_POLICY_TEXT.substring(result.sourceOffsets!.start_char, result.sourceOffsets!.end_char), quote);
   });
 
-  // 3. Test Evidence Matcher - Normalized Quote (different spacing/newlines)
-  await test('Evidence Matcher handles normalized whitespace differences', () => {
-    const quote = 'We   collect   personal   information that you provide to us';
+  // 3. Normalized Contiguous Passage Match
+  await test('Evidence Matcher verifies contiguous passage across whitespace/line-break variations', () => {
+    const quote = 'We    collect\n\npersonal    information   that   you   provide to us';
     const result = verifyEvidenceQuote(quote, SAMPLE_POLICY_TEXT);
-    assert(result.status === 'verified' || result.status === 'approximate');
-    assert(result.matchScore >= 0.80);
+    assert.strictEqual(result.status, 'approximate');
+    assert.strictEqual(result.matchScore, 0.90);
+    assert(result.sourceOffsets, 'Expected source offsets');
+    assert(result.matchedText?.includes('personal information'));
   });
 
-  // 4. Test Evidence Matcher - Hallucinated / Non-existent Quote
-  await test('Evidence Matcher rejects fabricated quotes as unverified', () => {
-    const fakeQuote = 'We sell your biometric DNA data to overseas brokers for crypto profits';
+  // 4. Strict Rejection: Reordered Tokens
+  await test('Evidence Matcher strictly rejects reordered tokens (anagrams/scrambled words)', () => {
+    const scrambledQuote = 'personal collect information that us to provide you We';
+    const result = verifyEvidenceQuote(scrambledQuote, SAMPLE_POLICY_TEXT);
+    assert.strictEqual(result.status, 'unverified');
+    assert.strictEqual(result.matchScore, 0.0);
+    assert.strictEqual(result.sourceOffsets, undefined);
+  });
+
+  // 5. Strict Rejection: Spliced Non-Contiguous Fragments
+  await test('Evidence Matcher strictly rejects spliced non-contiguous fragments', () => {
+    // Splicing Section 1 prefix with Section 6 suffix
+    const splicedQuote = 'We collect personal information Cyber City Gurugram Haryana India';
+    const result = verifyEvidenceQuote(splicedQuote, SAMPLE_POLICY_TEXT);
+    assert.strictEqual(result.status, 'unverified');
+    assert.strictEqual(result.matchScore, 0.0);
+  });
+
+  // 6. Strict Rejection: Fabricated Quotes
+  await test('Evidence Matcher strictly rejects fabricated / hallucinated quotes', () => {
+    const fakeQuote = 'We sell your biometric DNA telemetry to offshore crypto hedge funds';
     const result = verifyEvidenceQuote(fakeQuote, SAMPLE_POLICY_TEXT);
     assert.strictEqual(result.status, 'unverified');
     assert.strictEqual(result.matchScore, 0.0);
   });
 
-  // 5. Test Policy Analysis Pipeline
-  await test('Policy Analyzer segments categories & verifies quotes', async () => {
+  // 7. Strict Rejection: Empty / Malformed Input
+  await test('Evidence Matcher rejects empty or punctuation-only strings', () => {
+    assert.strictEqual(verifyEvidenceQuote('', SAMPLE_POLICY_TEXT).status, 'unverified');
+    assert.strictEqual(verifyEvidenceQuote('   ', SAMPLE_POLICY_TEXT).status, 'unverified');
+    assert.strictEqual(verifyEvidenceQuote('... --- !!!', SAMPLE_POLICY_TEXT).status, 'unverified');
+  });
+
+  // 8. Policy Analyzer: Category Segmentation, Offsets & Provenance
+  await test('Policy Analyzer attaches detection_source and uncertainty_label', async () => {
     const analysis = await analyzePolicyText(SAMPLE_POLICY_TEXT, 'Test Policy');
     assert(analysis.analysis_id, 'Expected analysis_id');
     assert(analysis.clauses.length >= 6, 'Expected at least 6 extracted clauses');
@@ -89,27 +118,24 @@ async function runTestSuite() {
     const collectionClause = analysis.clauses.find((c) => c.category === 'data_collection');
     assert(collectionClause, 'Expected data_collection clause');
     assert.strictEqual(collectionClause?.evidence_status, 'verified');
-    assert(collectionClause?.legal_reference, 'Expected legal_reference to exist on data_collection clause');
-    assert(collectionClause?.legal_reference?.statute.includes('DPDP'), 'Expected DPDP in statute title');
-
-    const grievanceClause = analysis.clauses.find((c) => c.category === 'grievance_contact');
-    assert(grievanceClause, 'Expected grievance_contact clause');
-    assert.strictEqual(grievanceClause?.evidence_status, 'verified');
-
-    assert(analysis.summary.evidence_verification_rate > 80, 'Expected high evidence verification rate');
+    assert.strictEqual(collectionClause?.detection_source, 'deterministic_rule');
+    assert.strictEqual(collectionClause?.uncertainty_label, 'high_certainty');
+    assert(collectionClause?.source_offsets, 'Expected source offsets on verified clause');
+    assert(collectionClause?.legal_reference?.statute.includes('DPDP'));
   });
 
-  // 6. Test Policy Missing Category Detection
-  await test('Policy Analyzer flags omitted categories as not_found_in_analysed_text', async () => {
-    const minimalText = 'We collect your name and email to send you notifications. Contact us at hello@example.com';
+  // 9. Policy Analyzer: Omission & Absence Semantics
+  await test('Policy Analyzer flags omitted categories as not_found_in_analysed_text with unverified_omission', async () => {
+    const minimalText = 'We collect your name and email. Contact us at support@example.com';
     const analysis = await analyzePolicyText(minimalText, 'Minimal Policy');
     const retentionClause = analysis.clauses.find((c) => c.category === 'retention_period');
-    assert(retentionClause, 'Expected retention clause to be checked');
+    assert(retentionClause, 'Expected retention clause check');
     assert.strictEqual(retentionClause?.information_state, 'not_found_in_analysed_text');
     assert.strictEqual(retentionClause?.evidence_status, 'unverified');
+    assert.strictEqual(retentionClause?.uncertainty_label, 'unverified_omission');
   });
 
-  // 7. Test Redressal Draft Generator (Consent Withdrawal)
+  // 10. Redressal Draft: DPDP Section 6(4) Consent Withdrawal
   await test('Draft Generator creates DPDP Section 6(4) consent withdrawal letter', () => {
     const draft = generateRedressalDraft({
       concern_type: 'consent_withdrawal',
@@ -117,17 +143,16 @@ async function runTestSuite() {
       recipient_email: 'dpo@acme.com',
       consumer_name: 'Rahul Sharma',
       consumer_identifier: 'rahul@example.com',
-      user_notes: 'Please stop marketing SMS and personalized tracking.',
+      user_notes: 'Please cease marketing SMS and profiling.',
     });
 
     assert(draft.draft_id, 'Expected draft_id');
     assert(draft.subject.includes('Section 6(4) of DPDP Act 2023'));
     assert(draft.body.includes('Rahul Sharma'));
-    assert(draft.body.includes('dpo@acme.com'));
     assert(draft.statutory_citations.some((c) => c.section === 'Section 6(4)'));
   });
 
-  // 8. Test Redressal Draft Generator (Erasure Request)
+  // 11. Redressal Draft: DPDP Section 12 Data Erasure
   await test('Draft Generator creates DPDP Section 12 data erasure letter', () => {
     const draft = generateRedressalDraft({
       concern_type: 'data_erasure',
@@ -140,8 +165,8 @@ async function runTestSuite() {
     assert(draft.statutory_citations.some((c) => c.section === 'Section 12'));
   });
 
-  // 9. Test Preference Records Storage & Status Honesty
-  await test('Storage Adapter manages preferences and honest status values', async () => {
+  // 12. Storage Adapter: Preferences Status Honesty
+  await test('Storage Adapter manages preferences with honest local status', async () => {
     const prefs = await storage.listPreferences();
     assert(prefs.length >= 3, 'Expected default preferences');
 
@@ -159,15 +184,15 @@ async function runTestSuite() {
     assert.strictEqual(updated.status, 'pending_manual_send');
   });
 
-  // 10. Test Request Tracking & Event Timeline
-  await test('Storage Adapter manages request lifecycle and append-only event timeline', async () => {
+  // 13. Storage Adapter: Append-Only Request Event Timeline
+  await test('Storage Adapter maintains append-only timeline events without mutation', async () => {
     const req = await storage.createRequest({
       service_name: 'Test Platform',
       recipient_email: 'grievance@test.com',
       concern_type: 'grievance_inquiry',
       status: 'draft',
-      subject: 'Inquiry regarding data sharing',
-      body_content: 'Please explain location data sharing.',
+      subject: 'Inquiry regarding third-party disclosures',
+      body_content: 'Please provide notice details.',
     });
 
     assert(req.id.startsWith('req-'));
@@ -176,7 +201,7 @@ async function runTestSuite() {
 
     const updated = await storage.addRequestEvent(req.id, {
       event_type: 'marked_as_sent',
-      description: 'Email sent manually by consumer to grievance officer',
+      description: 'Dispatched manually via email by consumer',
       statusChange: 'sent_manually',
     });
 

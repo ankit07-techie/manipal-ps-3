@@ -4,8 +4,10 @@ import { config } from '../config.js';
 import {
   AnalysedClause,
   ClauseCategory,
+  DetectionSource,
   InformationState,
   PolicyAnalysisResult,
+  UncertaintyLabel,
 } from '../types.js';
 import { verifyEvidenceQuote } from './evidenceMatcher.js';
 import { getStatutoryReferenceForCategory, LEGAL_DISCLAIMER_TEXT } from '../data/legalSources.js';
@@ -42,7 +44,7 @@ CRITICAL INSTRUCTIONS:
    - 'information_state': one of 'stated', 'unclear', 'not_found_in_analysed_text', 'requires_review'.
    - 'source_reference': section heading, title, or paragraph if mentioned in text.
    - 'potential_question': a constructive question the consumer might ask the company.
-   - 'risk_level': 'low', 'moderate', 'high', or 'neutral'.
+   - 'risk_level': 'low' | 'moderate' | 'high' | 'neutral'.
    - 'suggested_action': a brief consumer next step if relevant.
 4. Output STRICT JSON format matching the schema requested.
 `;
@@ -58,12 +60,30 @@ interface RawAIClause {
   suggested_action?: string;
 }
 
+function computeUncertaintyLabel(
+  informationState: InformationState,
+  evidenceStatus: 'verified' | 'approximate' | 'unverified'
+): UncertaintyLabel {
+  if (informationState === 'not_found_in_analysed_text') {
+    return 'unverified_omission';
+  }
+  if (informationState === 'unclear' || informationState === 'requires_review') {
+    return 'requires_human_review';
+  }
+  if (evidenceStatus === 'verified') {
+    return 'high_certainty';
+  }
+  if (evidenceStatus === 'approximate') {
+    return 'moderate_uncertainty';
+  }
+  return 'requires_human_review';
+}
+
 /**
- * Intelligent Rule-Based Analyzer for fallback or offline demo mode
+ * Deterministic Rule-Based Analyzer for fallback or offline demo mode
  */
 function analyzeWithRuleBasedParser(rawText: string, sourceLabel: string): AnalysedClause[] {
   const clauses: AnalysedClause[] = [];
-  const lowerText = rawText.toLowerCase();
 
   const rules: {
     category: ClauseCategory;
@@ -139,11 +159,13 @@ function analyzeWithRuleBasedParser(rawText: string, sourceLabel: string): Analy
     },
   ];
 
-  // Split text into paragraphs/sentences
-  const paragraphs = rawText.split(/\n\s*\n|\n(?=[A-Z0-9\.\-\s]{3,40}\n)/).map((p) => p.trim()).filter((p) => p.length > 30);
+  // Split text into paragraphs
+  const paragraphs = rawText
+    .split(/\n\s*\n|\n(?=[A-Z0-9\.\-\s]{3,40}\n)/)
+    .map((p) => p.trim())
+    .filter((p) => p.length > 25);
 
   let idCounter = 1;
-  const coveredCategories = new Set<ClauseCategory>();
 
   for (const rule of rules) {
     let matchedParagraph = '';
@@ -154,7 +176,6 @@ function analyzeWithRuleBasedParser(rawText: string, sourceLabel: string): Analy
       const matchedKeyword = rule.keywords.find((k) => pLower.includes(k));
       if (matchedKeyword) {
         matchedParagraph = p;
-        // Find a representative sentence or snippet
         const sentences = p.split(/(?<=[.?!])\s+/);
         const matchSentence = sentences.find((s) => s.toLowerCase().includes(matchedKeyword)) || sentences[0] || p;
         matchedSnippet = matchSentence.trim().slice(0, 300);
@@ -162,10 +183,13 @@ function analyzeWithRuleBasedParser(rawText: string, sourceLabel: string): Analy
       }
     }
 
+    const clauseId = `clause-${idCounter++}`;
+    const legalRef = getStatutoryReferenceForCategory(rule.category);
+
     if (matchedSnippet) {
-      coveredCategories.add(rule.category);
-      const clauseId = `clause-${idCounter++}`;
-      const legalRef = getStatutoryReferenceForCategory(rule.category);
+      const verification = verifyEvidenceQuote(matchedSnippet, rawText);
+      const infoState: InformationState = 'stated';
+      const uncertainty = computeUncertaintyLabel(infoState, verification.status);
 
       clauses.push({
         clause_id: clauseId,
@@ -174,10 +198,13 @@ function analyzeWithRuleBasedParser(rawText: string, sourceLabel: string): Analy
         plain_language_explanation: rule.explanation,
         original_text: matchedParagraph.slice(0, 500),
         evidence_quote: matchedSnippet,
+        matched_passage: verification.matchedText,
+        source_offsets: verification.sourceOffsets,
         source_reference: `Extracted section (${rule.keywords[0]})`,
-        evidence_status: 'verified',
-        information_state: 'stated',
-        confidence_score: 0.95,
+        evidence_status: verification.status,
+        information_state: infoState,
+        detection_source: 'deterministic_rule' as DetectionSource,
+        uncertainty_label: uncertainty,
         potential_question: rule.question,
         legal_reference: legalRef,
         risk_level: rule.risk,
@@ -185,8 +212,8 @@ function analyzeWithRuleBasedParser(rawText: string, sourceLabel: string): Analy
       });
     } else {
       // Mark as not found in analysed text
-      const clauseId = `clause-${idCounter++}`;
-      const legalRef = getStatutoryReferenceForCategory(rule.category);
+      const infoState: InformationState = 'not_found_in_analysed_text';
+      const uncertainty = computeUncertaintyLabel(infoState, 'unverified');
 
       clauses.push({
         clause_id: clauseId,
@@ -196,8 +223,9 @@ function analyzeWithRuleBasedParser(rawText: string, sourceLabel: string): Analy
         evidence_quote: '',
         source_reference: 'Document scan',
         evidence_status: 'unverified',
-        information_state: 'not_found_in_analysed_text',
-        confidence_score: 0.90,
+        information_state: infoState,
+        detection_source: 'deterministic_rule' as DetectionSource,
+        uncertainty_label: uncertainty,
         potential_question: `Does the service maintain a separate schedule or policy detailing ${CATEGORY_LABELS[rule.category].toLowerCase()}?`,
         legal_reference: legalRef,
         risk_level: rule.category === 'grievance_contact' || rule.category === 'retention_period' ? 'high' : 'moderate',
@@ -260,6 +288,8 @@ ${rawText.slice(0, 30000)}
           const clauseId = `clause-${counter++}`;
           const verification = verifyEvidenceQuote(item.evidence_quote, rawText);
           const legalRef = getStatutoryReferenceForCategory(item.category);
+          const infoState = item.information_state || 'stated';
+          const uncertainty = computeUncertaintyLabel(infoState, verification.status);
 
           return {
             clause_id: clauseId,
@@ -267,10 +297,13 @@ ${rawText.slice(0, 30000)}
             category_label: CATEGORY_LABELS[item.category] || 'General',
             plain_language_explanation: item.plain_language_explanation,
             evidence_quote: item.evidence_quote,
+            matched_passage: verification.matchedText,
+            source_offsets: verification.sourceOffsets,
             source_reference: item.source_reference || 'Analysed section',
             evidence_status: verification.status,
-            information_state: item.information_state || 'stated',
-            confidence_score: verification.matchScore,
+            information_state: infoState,
+            detection_source: 'llm_extracted' as DetectionSource,
+            uncertainty_label: uncertainty,
             potential_question: item.potential_question,
             legal_reference: legalRef,
             risk_level: item.risk_level || 'neutral',
@@ -279,21 +312,24 @@ ${rawText.slice(0, 30000)}
         });
       }
     } catch (err) {
-      console.warn('Gemini API call failed or encountered parse error, falling back to rule-based parser:', err);
+      console.warn('Gemini API call failed or encountered parse error, falling back to deterministic parser:', err);
     }
   }
 
-  // Fallback to robust deterministic rule-based analysis if AI clauses are empty
+  // Fallback to deterministic rule-based analysis if AI clauses are empty
   if (clauses.length === 0) {
     clauses = analyzeWithRuleBasedParser(rawText, sourceLabel);
   }
 
-  // Re-verify all evidence quotes against raw document text for absolute integrity
+  // Verification metrics calculation
   let verifiedCount = 0;
   for (const clause of clauses) {
     if (clause.evidence_quote) {
       const v = verifyEvidenceQuote(clause.evidence_quote, rawText);
       clause.evidence_status = v.status;
+      clause.matched_passage = v.matchedText;
+      clause.source_offsets = v.sourceOffsets;
+      clause.uncertainty_label = computeUncertaintyLabel(clause.information_state, v.status);
       if (v.status === 'verified' || v.status === 'approximate') {
         verifiedCount++;
       }

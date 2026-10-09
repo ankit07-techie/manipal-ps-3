@@ -19,8 +19,19 @@ export type InformationState =
 
 export type EvidenceStatus =
   | 'verified'      // Verbatim exact match found in raw source text
-  | 'approximate'   // Normalized match (whitespace/punctuation difference)
-  | 'unverified';   // Quote cannot be located in source text
+  | 'approximate'   // Contiguous normalized match (whitespace/punctuation difference)
+  | 'unverified';   // Quote cannot be located contiguously in source text
+
+export type DetectionSource =
+  | 'llm_extracted'
+  | 'deterministic_rule'
+  | 'semantic_fallback';
+
+export type UncertaintyLabel =
+  | 'high_certainty'
+  | 'moderate_uncertainty'
+  | 'unverified_omission'
+  | 'requires_human_review';
 
 export interface StatutoryReference {
   statute: string;
@@ -30,6 +41,11 @@ export interface StatutoryReference {
   official_url?: string;
 }
 
+export interface SourceOffsets {
+  start_char: number;
+  end_char: number;
+}
+
 export interface AnalysedClause {
   clause_id: string;
   category: ClauseCategory;
@@ -37,10 +53,13 @@ export interface AnalysedClause {
   plain_language_explanation: string;
   original_text?: string;
   evidence_quote: string;
+  matched_passage?: string;
+  source_offsets?: SourceOffsets;
   source_reference: string;
   evidence_status: EvidenceStatus;
   information_state: InformationState;
-  confidence_score?: number;
+  detection_source?: DetectionSource;
+  uncertainty_label?: UncertaintyLabel;
   potential_question?: string;
   legal_reference?: StatutoryReference;
   risk_level?: 'low' | 'moderate' | 'high' | 'neutral';
@@ -57,7 +76,7 @@ export interface PolicyAnalysisResult {
     total_clauses: number;
     categories_present: ClauseCategory[];
     missing_or_unclear_categories: ClauseCategory[];
-    evidence_verification_rate: number; // Percentage of clauses verified
+    evidence_verification_rate: number; // Percentage of clauses with verified/approximate evidence
     primary_concerns_count: number;
   };
   clauses: AnalysedClause[];
@@ -104,7 +123,7 @@ export interface RedressalDraftRequest {
   selected_clause_ids?: string[];
   user_notes?: string;
   consumer_name?: string;
-  consumer_identifier?: string; // e.g. registered email or account ID
+  consumer_identifier?: string;
 }
 
 export interface RedressalDraft {
